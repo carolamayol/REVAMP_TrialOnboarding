@@ -1,0 +1,39 @@
+SELECT x.shop_id
+, x.shop_contact_owner_email
+, x.contact_key
+, getdate() as "date_added"
+FROM 
+    (
+        SELECT
+        w.shop_id
+        , w.shop_contact_owner_email
+        , w.contact_key
+        , getdate() as "date_added",
+        row_number() OVER (PARTITION BY w.contact_key ORDER BY w.shop_contact_created_at ASC) rank 
+
+        FROM Shops w
+        WHERE ("shop_contact_owner_locale" LIKE 'en%' OR "shop_contact_owner_locale" = '')
+        AND DATEDIFF(hh, "shop_contact_created_at", getdate()) <= 36
+        /* Excluding merchants in India journey */
+        AND shop_contact_owner_email NOT IN (
+            SELECT shop_contact_owner_email
+            FROM Trial_Onboarding_2021_Design_English_India
+            WHERE DATEDIFF(dd,"date_added",getdate()) <= 14
+            )
+        /* NOT CBD */
+        AND ("subscription_signup_code" != 'CBD30days' OR "subscription_signup_code" IS NULL)
+        /* NOT POS */
+        AND (shop_conversion_raw_signup_page NOT LIKE '%/pos%' OR shop_conversion_raw_signup_page IS NULL)
+        AND (shop_conversion_raw_signup_page NOT LIKE '%/retail%' OR shop_conversion_raw_signup_page IS NULL)
+        AND (shop_conversion_offline_brick_and_mortar = 0 OR shop_conversion_offline_brick_and_mortar IS NULL)
+        AND (shop_conversion_previous_platform not in ('Clover','Square','Lightspeed','quickbooks_pos','Revel','Shopkeep','Springboard','Vend') OR shop_conversion_previous_platform IS NULL)
+
+    ) x
+
+INNER JOIN Exp_31_Variant_Tag v
+ON x.contact_key = v.contact_key
+
+WHERE
+   x.rank = 1 
+    v.Variant = 'Variant_A'
+
