@@ -1,0 +1,74 @@
+SELECT DISTINCT mil.shop_id,GETDATE() AS last_update,
+CASE WHEN mil.shop_id = a.shop_id THEN 1 ELSE 0 END AS onboarding_add_product,
+CASE WHEN mil.shop_id = b.shop_id THEN 1 ELSE 0 END AS onboarding_customize_store,
+CASE WHEN mil.shop_id = c.shop_id THEN 1 ELSE 0 END AS onboarding_register_domain,
+CASE WHEN mil.shop_id = d.shop_id THEN 1 ELSE 0 END AS onboarding_setup_payments,
+CASE WHEN mil.shop_id = e.shop_id THEN 1 ELSE 0 END AS onboarding_pick_a_plan,
+
+FROM [shop-milestones-completed] mil
+LEFT JOIN (
+    SELECT shop_id
+    FROM [shop-milestones-completed]
+    WHERE shop_milestone_name = 'onboarding_add_product'
+    AND shop_milestone_completed_at > DATEADD(d,-15,GETDATE())
+) a ON a.shop_id = mil.shop_id
+
+LEFT JOIN (
+    SELECT shop_id
+    FROM [shop-milestones-completed]
+    WHERE shop_milestone_name IN (
+        'onboarding_customize_home_page',
+        'onboarding_customize_landing_page',
+        'onboarding_customize_navigation',
+        'onboarding_customize_theme_settings',
+        'onboarding_edit_theme',
+        'onboarding_add_page',
+        'onboarding_create_logo')
+    AND shop_milestone_completed_at > DATEADD(d,-15,GETDATE())
+) b ON b.shop_id = mil.shop_id
+
+LEFT JOIN (
+    SELECT shop_id
+    FROM [shop-milestones-completed]
+    WHERE shop_milestone_name = 'onboarding_register_domain'
+    AND shop_milestone_completed_at > DATEADD(d,-15,GETDATE())
+) c ON c.shop_id = mil.shop_id
+
+LEFT JOIN (
+    SELECT shop_id
+    FROM [shop-milestones-completed]
+    WHERE shop_milestone_name IN (
+        'onboarding_general_payments_ready',
+        'onboarding_payment_setup',
+        'onboarding_payments_ready',
+        'onboarding_paypal_payments_ready',
+        'onboarding_shopify_payments_connected',
+        'onboarding_shopify_payments_ready',
+        'setup_payments_gateway',
+        'shopify_payments_ready',
+        'ready_to_accept_payments')
+    AND shop_milestone_completed_at > DATEADD(d,-15,GETDATE())
+) d ON d.shop_id = mil.shop_id
+
+
+LEFT JOIN (
+    SELECT shop_id
+    FROM [shop-milestones-completed]
+    WHERE shop_milestone_name = 'onboarding_pick_a_plan'
+    AND shop_milestone_completed_at > DATEADD(d,-15,GETDATE())
+) e ON e.shop_id = mil.shop_id
+
+
+WHERE mil.shop_milestone_name IN (
+    'onboarding_add_product',
+    'onboarding_pick_a_plan',
+    'onboarding_register_domain',
+    'onboarding_edit_theme',
+    'setup_unlock_store',
+    'setup_payments_gateway',
+    'onboarding_general_payments_ready',
+    'onboarding_shopify_payments_connected',
+    'ready_to_accept_payments'
+)
+
+AND mil.shop_milestone_completed_at > DATEADD(d,-15,GETDATE())
