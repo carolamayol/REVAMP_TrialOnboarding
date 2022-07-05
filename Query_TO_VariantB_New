@@ -1,0 +1,7 @@
+SELECT tod.shop_contact_owner_email,tod.contact_key,tod.shop_id,exp.variant
+FROM [Trial_Onboarding_2019_Design] tod
+
+LEFT JOIN [Exp_31_Variant_Tag] exp
+ON exp.contact_key = tod.contact_key
+
+WHERE exp.variant = 'Variant_B'
