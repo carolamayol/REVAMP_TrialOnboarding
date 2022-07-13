@@ -1,0 +1,23 @@
+/* Upsert into Exp31 Tracking DE */
+UpsertDE("Exp_31_Journey_Tracker", 1 ,"contact_key",@contact_key,"shop_id",@shop_id,"products_sent","True")
+
+/* Upsert into Exp31 Tracking DE */
+UpsertDE("Exp_31_Journey_Tracker", 1 ,"contact_key",@contact_key,"shop_id",@shop_id,"products_rem_sent","True")
+
+/* Upsert into Exp31 Tracking DE */
+UpsertDE("Exp_31_Journey_Tracker", 1 ,"contact_key",@contact_key,"shop_id",@shop_id,"customize_sent","True")
+
+/* Upsert into Exp31 Tracking DE */
+UpsertDE("Exp_31_Journey_Tracker", 1 ,"contact_key",@contact_key,"shop_id",@shop_id,"customize_rem_sent","True")
+
+/* Upsert into Exp31 Tracking DE */
+UpsertDE("Exp_31_Journey_Tracker", 1 ,"contact_key",@contact_key,"shop_id",@shop_id,"domain_sent","True")
+
+/* Upsert into Exp31 Tracking DE */
+UpsertDE("Exp_31_Journey_Tracker", 1 ,"contact_key",@contact_key,"shop_id",@shop_id,"payments_sent","True")
+
+/* Upsert into Exp31 Tracking DE */
+UpsertDE("Exp_31_Journey_Tracker", 1 ,"contact_key",@contact_key,"shop_id",@shop_id,"plan_sent","True")
+
+/* Upsert into Exp31 Tracking DE */
+UpsertDE("Exp_31_Journey_Tracker", 1 ,"contact_key",@contact_key,"shop_id",@shop_id,"marketing_sent","True")
