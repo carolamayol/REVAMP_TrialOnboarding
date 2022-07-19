@@ -1,0 +1,1577 @@
+%%[
+
+/******************/
+/* Main variables */
+/******************/
+
+SET @shop_contact_owner_first_name = ProperCase(Replace(Replace([shop_contact_owner_first_name],">","&gt;"),"<","&lt;")) 
+SET @shop_id = [shop_id]
+SET @shop_contact_permanent_domain = [shop_contact_permanent_domain]
+SET @admin_page = Concat("https://",@shop_contact_permanent_domain,"/admin")
+SET @shop_contact_owner_email = [shop_contact_owner_email]
+SET @contact_key = [contact_key]
+SET @shop_conversion_raw_signup_page = [shop_conversion_raw_signup_page]
+
+SET @shop_contact_owner_locale = [shop_contact_owner_locale]
+SET @lang = Substring(@shop_contact_owner_locale,1,2)
+IF @lang == "pt" THEN 
+   IF @shop_contact_owner_locale == "pt-BR" THEN 
+   SET @lang = "pt-BR" 
+   ELSE 
+   SET @lang = "pt-PT" 
+   ENDIF 
+ ELSEIF @lang == "zh" or @lang == "ha" THEN 
+   IF @shop_contact_owner_locale == "zh-CN" OR @shop_contact_owner_locale == "hans" THEN 
+   SET @lang = "zh-CN" 
+   ELSE 
+   SET @lang = "zh-TW" 
+   ENDIF 
+ENDIF 
+
+
+
+/* Google Analytics parameters */
+SET @GA_params = "utm_source=exacttarget&utm_medium=email&utm_campaign=onboarding&utm_content=2022_en_1"
+
+
+/* Makers */
+IF (Length(RegExMatch(@shop_conversion_raw_signup_page, "[\/=]makers", 0, "IgnoreCase")) > 0) THEN
+ SET @makers = 1
+ELSE
+ SET @makers = 0
+ENDIF
+
+
+/* Replatformers */
+set @replatformers_lookup = Lookup("shop-onboarding-answers-production", "shop_onboarding_move_existing_store", "contact_key", @contact_key)
+if @replatformers_lookup == "Yes" then
+set @replatformers = 1
+else
+set @replatformers = 0
+endif
+
+
+
+/********************/
+/* 14 days wording */
+/********************/
+
+set @string = [shop_conversion_raw_signup_page]
+
+if IndexOf(@String,'vendoo') > 0 OR IndexOf(@String,'googleisbw') > 0 OR IndexOf(@String,'building-shop-313') > 0 OR IndexOf(@String,'https://www.shopify.com/revolut') > 0 OR IndexOf(@String,'building-1mbb') > 0 OR IndexOf(@String,'commerce-builders') > 0 OR IndexOf(@String,'support-build') > 0 then 
+set @show14 = ""
+else 
+set @show14 = " in 14 days"
+endif
+
+
+
+/********************/
+/* SL and Preheader */
+/********************/
+
+SET @subject = "Welcome to Shopify! Let’s get started"
+
+SET @preheader = CONCAT("Go from signup to selling",@show14)
+
+
+
+
+/****************************/
+/* Paid Ads Dynamic Content */
+/****************************/
+
+set @shop_conversion_raw_signup_page = [shop_conversion_raw_signup_page] 
+set @index_of = indexOf(@shop_conversion_raw_signup_page, "bucket=")
+
+if @index_of > 0 then 
+  set @substring = Substring(@shop_conversion_raw_signup_page, @index_of)
+  set @bucket_name1 = Substring(@substring,1, Subtract(IndexOf(@substring,"&"),1))
+
+/* isolating the bucket_name parameter content when its in the middle of the url  */
+if IndexOf(@bucket_name1,'_ES') > 0 then
+set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_ES"),1))
+elseif IndexOf(@bucket_name1,'_PTBR') > 0 then
+set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_PTBR"),1))
+elseif IndexOf(@bucket_name1,'_FR') > 0 then
+set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_FR"),1))
+elseif IndexOf(@bucket_name1,'_DE') > 0 then
+set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_DE"),1))
+elseif IndexOf(@bucket_name1,'_IT') > 0 then
+set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_IT"),1))
+else   
+set @bucket_name = Substring(@substring,1, Subtract(IndexOf(@substring,"&"),1))
+endif 
+
+/* check if this utm needs specific content */
+  if Length(Lookup("PaidSegments_Email_Content", "shop_conversion_raw_signup_page", "shop_conversion_raw_signup_page", @bucket_name)) > 0  then
+    set @title = Lookup("PaidSegments_Email_Content", "title", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @image = Lookup("PaidSegments_Email_Content", "image", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @image_url = Lookup("PaidSegments_Email_Content", "image_url", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @paragraph_1 = Lookup("PaidSegments_Email_Content", "paragraph_1", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @paragraph_2 = Lookup("PaidSegments_Email_Content", "paragraph_2", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @paragraph_3 = Lookup("PaidSegments_Email_Content", "paragraph_3", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @cta_text = Lookup("PaidSegments_Email_Content", "cta_text", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @cta_url = Lookup("PaidSegments_Email_Content", "cta_url", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @use_subject = Lookup("PaidSegments_Email_Content", "use_subject", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @image_alt = Lookup("PaidSegments_Email_Content", "image_alt", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @subject = Lookup("PaidSegments_Email_Content", "subject", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name, "use_subject", @use_subject)
+    set @show_block = True
+  else
+    set @show_block = False
+  endif
+else
+  set @show_block = False
+endif
+
+
+
+/***********************/
+/* Unsub & Preferences */
+/***********************/
+
+/* Define unsubscribe list type */
+SET @unsubscribe_list = 'Marketing'
+
+/* Sets @preferences_url */
+%%=ContentBlockByID("207888")=%%
+
+/* Sets @unsubscribe_from_single_list_url */
+%%=ContentBlockByID("207887")=%%
+
+/* Show 'Manage Preferences' in footer, set to 1 to show */
+SET @show_pref = 1 
+/* Show 'Log in' link in header, set to 1 to show */
+SET @show_login = 1
+ 
+
+
+]%%
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+  <head>
+    <!-- Yahoo will strip this. Fixes yahoo app not being mobile responsive -->
+
+  </head>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- So that mobile will display zoomed in -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- enable media queries for windows phone 8 -->
+    <meta name="x-apple-disable-message-reformatting" />
+    <!-- fixes email not full width ios gmail -->
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <!-- Enables Dark Mode in email client user agents -->
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
+    <!-- Prevent email clients automatically detecting and generating links out of phone numbers, dates, addresses, email addresses and url’s -->
+    <title>Shopify</title>
+    <!--[if !mso]><!-->
+    <style>
+      :root {
+        color-scheme: light dark;
+        supported-color-schemes: light dark;
+      }
+
+      /* SHOPIFY // Load Fonts */
+      @font-face {
+        font-family: "ShopifySans";
+        src: url("https://cdn.shopify.com/shopify-marketing_assets/static/ShopifySans--light.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 300
+      }
+
+      @font-face {
+        font-family: "ShopifySans";
+        src: url("https://cdn.shopify.com/shopify-marketing_assets/static/ShopifySans--regular.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 400
+      }
+
+      @font-face {
+        font-family: "ShopifySans";
+        src: url("https://cdn.shopify.com/shopify-marketing_assets/static/ShopifySans--medium.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 500
+      }
+
+      @font-face {
+        font-family: "ShopifySans";
+        src: url("https://cdn.shopify.com/shopify-marketing_assets/static/ShopifySans--bold.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 700
+      }
+
+      @font-face {
+        font-family: "ShopifySans";
+        src: url("https://cdn.shopify.com/shopify-marketing_assets/static/ShopifySans--black.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 900
+      }
+    </style>
+    <!--<![endif]-->
+    <style type="text/css">
+      html,
+      body {
+        margin: 0 auto !important;
+        padding: 0 !important;
+        height: 100% !important;
+        width: 100% !important;
+      }
+
+      *,
+      body,
+      td {
+        font-family: 'ShopifySans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+      }
+
+      /* Force correct font size */
+      * {
+        -ms-text-size-adjust: 100%;
+        -webkit-text-size-adjust: 100%;
+        text-rendering: optimizelegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Prevent Outlook extra spacing */
+      table,
+      td {
+        mso-table-lspace: 0pt !important;
+        mso-table-rspace: 0pt !important;
+        mso-line-height-rule: exactly;
+        border-collapse: collapse !important;
+      }
+
+      /* Fix webkit padding */
+      table {
+        border-spacing: 0 !important;
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+      }
+
+      /* What it does:Prevents Windows 10 Mail from underlining links despite inline CSS. Styles for underlined links should be inline. */
+      a {
+        text-decoration: none;
+        color: #0A0B0D;
+      }
+
+      /* Fix image rendering in IE */
+      img {
+        -ms-interpolation-mode: bicubic;
+      }
+
+      /* What it does:A work-around for email clients meddling in triggered links. */
+      a[x-apple-data-detectors],
+      /* iOS */
+      .unstyle-auto-detected-links a,
+      .aBn {
+        border-bottom: 0 !important;
+        cursor: default !important;
+        color: inherit !important;
+        text-decoration: none !important;
+        font-size: inherit !important;
+        font-family: inherit !important;
+        font-weight: inherit !important;
+        line-height: inherit !important;
+      }
+
+      /* What it does:Prevents Gmail from changing the text color in conversation threads. */
+      .im {
+        color: inherit !important;
+      }
+
+      /* What it does:Prevents Gmail from displaying a download button on large, non-linked images. */
+      .a6S {
+        display: none !important;
+        opacity: 0.01 !important;
+      }
+
+      /* Paragraph reset */
+      p {
+        margin: 10px 0;
+        font-weight: 400;
+        padding: 0;
+        color: #212B35;
+      }
+
+      /* Header reset */
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        display: block;
+        margin: 0;
+        padding: 0;
+        font-weight: 500;
+      }
+
+      /* Image reset */
+      img,
+      a img {
+        border: 0;
+        height: auto;
+        outline: none;
+        text-decoration: none;
+        font-size: 0px;
+        line-height: 0px;
+      }
+
+      /* Better superscript */
+      sup {
+        font-size: 66%;
+        line-height: 1;
+        vertical-align: top;
+        mso-text-raise: 30%;
+      }
+
+      /* Center your email in Outlook.com */
+      .ExternalClass {
+        width: 100%;
+      }
+
+      .ExternalClass,
+      .ExternalClass p,
+      .ExternalClass span,
+      .ExternalClass font,
+      .ExternalClass td,
+      .ExternalClass div {
+        line-height: 100%;
+      }
+
+      img {
+        -ms-interpolation-mode: bicubic;
+      }
+
+      .yshortcuts a {
+        border-bottom: none !important;
+      }
+
+      .hide {
+        visibility: hidden;
+        display: none;
+        mso-hide: all;
+      }
+
+      .mbl-show {
+        display: none;
+        mso-hide: all;
+      }
+
+      #outlook a {
+        padding: 0;
+      }
+
+      /* Gmail link fix. Doesn't work for users who have images blocked by defualt */
+      u+#body a {
+        color: inherit;
+        text-decoration: none;
+        font-size: inherit;
+        font-family: inherit;
+        font-weight: inherit;
+        line-height: inherit;
+      }
+
+      /* TYPOGRAPHY */
+      h1 {
+        font-size: 24px !important;
+        line-height: 36px !important;
+        font-weight: 700 !important;
+      }
+
+      h2 {
+        font-size: 20px !important;
+        line-height: 30px !important;
+        font-weight: 700 !important;
+      }
+
+      .body-text-lg {
+        font-size: 16px !important;
+        line-height: 24px !important;
+        font-weight: 400 !important;
+        color: #423F3F !important;
+      }
+
+      .body-text {
+        font-size: 14px !important;
+        line-height: 22px !important;
+        font-weight: 400 !important;
+        color: #423F3F !important;
+      }
+
+      .body-text-sm {
+        font-size: 12px !important;
+        line-height: 18px !important;
+        font-weight: 400 !important;
+        color: #423F3F !important;
+      }
+
+      .title-sm {
+        font-size: 12px !important;
+        line-height: 18px !important;
+        font-weight: 700 !important;
+        color: #423F3F !important;
+      }
+
+      .eyebrow {
+        font-size: 14px !important;
+        line-height: 20px !important;
+        font-weight: 800 !important;
+        color: #0A0B0D !important;
+        letter-spacing: 0.5px !important;
+        text-transform: uppercase !important;
+      }
+
+      /* Banner components typography/button style */
+      .bc-title {
+        font-size: 20px !important;
+        line-height: 30px !important;
+        font-weight: 700 !important;
+        color: #ffffff !important;
+      }
+
+      h2 .bc-text-lg,
+      h3 .bc-text-lg {
+        font-size: 16px !important;
+        line-height: 24px !important;
+        font-weight: 400 !important;
+        color: #ffffff !important;
+      }
+
+      p .bc-text-lg {
+        font-size: 16px !important;
+        line-height: 24px !important;
+        font-weight: 400 !important;
+        color: #ffffff !important;
+      }
+
+      p .bc-body-text {
+        font-size: 14px !important;
+        line-height: 22px !important;
+        font-weight: 400 !important;
+        color: #ffffff !important;
+      }
+
+      .bc-body-text-sm span a {
+        font-size: 12px !important;
+        line-height: 18px !important;
+        font-weight: 400 !important;
+        color: #ffffff !important;
+      }
+
+      @media (prefers-color-scheme: dark) {
+
+        /* Shows Dark Mode-Only Content, Like Images */
+        .dark-img {
+          display: block !important;
+          width: auto !important;
+          overflow: visible !important;
+          float: none !important;
+          max-height: inherit !important;
+          max-width: inherit !important;
+          line-height: auto !important;
+          margin-top: 0px !important;
+          visibility: inherit !important;
+        }
+
+        /* Hides Light Mode-Only Content, Like Images */
+        .light-img {
+          display: none;
+          display: none !important;
+        }
+
+        /* Custom Dark Mode Background Color */
+        .darkmode {
+          background-color: #272623 !important;
+        }
+
+        .canvas {
+          background-color: #000000 !important;
+        }
+
+        /* Custom Dark Mode Font Colors */
+        h1,
+        h2,
+        h3,
+        p,
+        span,
+        a,
+        b,
+        .body-text,
+        .body-text-lg,
+        .body-text-sm,
+        .eyebrow {
+          color: #ffffff !important;
+        }
+
+        .link {
+          color: #D0F224 !important;
+        }
+
+        /* Custom Dark Mode Text Link Color */
+        /*  .link { color: #91ADD4 !important; }*/
+      }
+
+      /* Shows Dark Mode-Only Content, Like Images */
+      [data-ogsc] .dark-img {
+        display: block !important;
+        width: auto !important;
+        overflow: visible !important;
+        float: none !important;
+        max-height: inherit !important;
+        max-width: inherit !important;
+        line-height: auto !important;
+        margin-top: 0px !important;
+        visibility: inherit !important;
+      }
+
+      /* Hides Light Mode-Only Content, Like Images */
+      [data-ogsc] .light-img {
+        display: none;
+        display: none !important;
+      }
+
+      /* Custom Dark Mode Background Color */
+      [data-ogsc] .darkmode {
+        background-color: #272623 !important;
+      }
+
+      [data-ogsc] .canvas {
+        background-color: #000000 !important;
+      }
+
+      /* Custom Dark Mode Font Colors */
+      [data-ogsc] h1,
+      [data-ogsc] h2,
+      [data-ogsc] h3,
+      [data-ogsc] p,
+      [data-ogsc] span,
+      [data-ogsc] a,
+      [data-ogsc] b,
+      [data-ogsc] .body-text,
+      [data-ogsc] .body-text-lg,
+      [data-ogsc] .body-text-sm,
+      [data-ogsc] .eyebrow {
+        color: #ffffff !important;
+      }
+
+      [data-ogsc] .link {
+        color: #D0F224 !important;
+      }
+
+      /* Custom Dark Mode Text Link Color */
+      /*[data-ogsc] .link { color: #91ADD4 !important; }*/
+    </style>
+    <style>
+      /* MEDIA QUERIES */
+      @media screen and (max-width: 619px) {
+
+        .force-row,
+        .container {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+
+        /* What it does: Forces table cells into full-width rows. */
+        .mob-stack {
+          width: 100% !important;
+          display: block !important;
+          max-width: 100% !important;
+        }
+
+        /* And center justify these ones. */
+        .mob-stack-center {
+          text-align: center !important;
+        }
+
+        .col {
+          width: 100% !important;
+        }
+
+        .mbl-hide {
+          display: none !important;
+          font-size: 0;
+          max-height: 0;
+          line-height: 0;
+          padding: 0;
+          mso-hide: all;
+        }
+
+        .mbl-show {
+          display: block !important;
+          max-height: none !important;
+        }
+
+        .mbl-center {
+          text-align: center !important;
+          margin: 0 auto !important;
+        }
+
+        .mbl-left {
+          text-align: left !important;
+        }
+
+        .mbl-right {
+          text-align: right !important;
+        }
+
+        .gmail-fix a {
+          color: #004C3F !important;
+          text-decoration: none !important;
+        }
+
+        .emailButton {
+          max-width: 600px !important;
+          width: 100% !important;
+        }
+
+        .emailButton a {
+          display: block !important;
+          font-size: 18px !important;
+        }
+
+        /*
+        Similar setup to Bootstrap spacing classes
+        m - for classes that set margin
+        p - for classes that set padding
+
+        t - for classes that set margin-top or padding-top
+        b - for classes that set margin-bottom or padding-bottom
+        l - for classes that set margin-left or padding-left
+        r - for classes that set margin-right or padding-right
+        x - for classes that set both *-left and *-right
+        y - for classes that set both *-top and *-bottom
+        blank - for classes that set a margin or padding on all 4 sides of the element
+        */
+        .px-0 {
+          padding-right: 0 !important;
+          padding-left: 0 !important
+        }
+
+        .px-1 {
+          padding-right: 10px !important;
+          padding-left: 10px !important
+        }
+
+        .px-2 {
+          padding-right: 20px !important;
+          padding-left: 20px !important
+        }
+
+        .px-3 {
+          padding-right: 30px !important;
+          padding-left: 30px !important
+        }
+
+        .px-4 {
+          padding-right: 40px !important;
+          padding-left: 40px !important
+        }
+
+        .px-5 {
+          padding-right: 50px !important;
+          padding-left: 50px !important
+        }
+
+        .py-0 {
+          padding-top: 0 !important;
+          padding-bottom: 0 !important
+        }
+
+        .py-1 {
+          padding-top: 10px !important;
+          padding-bottom: 10px !important
+        }
+
+        .py-2 {
+          padding-top: 20px !important;
+          padding-bottom: 20px !important
+        }
+
+        .py-3 {
+          padding-top: 30px !important;
+          padding-bottom: 30px !important
+        }
+
+        .py-4 {
+          padding-top: 40px !important;
+          padding-bottom: 40px !important
+        }
+
+        .py-5 {
+          padding-top: 50px !important;
+          padding-bottom: 50px !important
+        }
+
+        .pt-0 {
+          padding-top: 0 !important
+        }
+
+        .pt-1 {
+          padding-top: 10px !important
+        }
+
+        .pt-2 {
+          padding-top: 20px !important
+        }
+
+        .pt-3 {
+          padding-top: 30px !important
+        }
+
+        .pt-4 {
+          padding-top: 40px !important
+        }
+
+        .pt-5 {
+          padding-top: 50px !important
+        }
+
+        .pb-0 {
+          padding-bottom: 0 !important
+        }
+
+        .pb-1 {
+          padding-bottom: 10px !important
+        }
+
+        .pb-2 {
+          padding-bottom: 20px !important
+        }
+
+        .pb-3 {
+          padding-bottom: 30px !important
+        }
+
+        .pb-4 {
+          padding-bottom: 40px !important
+        }
+
+        .pb-5 {
+          padding-bottom: 50px !important
+        }
+
+        .pr-0 {
+          padding-right: 0 !important
+        }
+
+        .pr-1 {
+          padding-right: 10px !important
+        }
+
+        .pr-2 {
+          padding-right: 20px !important
+        }
+
+        .pr-3 {
+          padding-right: 30px !important
+        }
+
+        .pr-4 {
+          padding-right: 40px !important
+        }
+
+        .pr-5 {
+          padding-right: 50px !important
+        }
+
+        .pl-0 {
+          padding-left: 0 !important
+        }
+
+        .pl-1 {
+          padding-left: 10px !important
+        }
+
+        .pl-2 {
+          padding-left: 20px !important
+        }
+
+        .pl-3 {
+          padding-left: 30px !important
+        }
+
+        .pl-4 {
+          padding-left: 40px !important
+        }
+
+        .pl-5 {
+          padding-left: 50px !important
+        }
+      }
+    </style>
+    <!--[if gte mso 9]>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:AllowPNG />
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+    <style type="text/css">
+      body,
+      table,
+      td,
+      div,
+      p,
+      span,
+      a,
+      strong,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-family: Arial, sans-serif !important;
+      }
+
+      table {
+        border-collapse: collapse !important;
+      }
+
+      sup {
+        font-size: 100% !important;
+      }
+    </style>
+    <![endif]-->
+  </head>
+  <body class="body" style="margin:0; padding:0;" bgcolor="#ffffff" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0" class="darkmode">
+    <!-- BEGINNING PREHEADER -->
+    <div style="display: none; max-height: 0px; overflow: hidden;">
+      &nbsp;
+    </div>
+
+    <!-- Insert &#847;&zwnj;&nbsp; hack after hidden preview text -->
+    <div style="display: none; max-height: 0px; overflow: hidden;">
+      &#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;
+    </div>
+    <!-- END PREHEADER -->
+    <!-- 100% background wrapper (grey background) -->
+    <table role="Newsletter" aria-roledescription="email" aria-label="Shopify" lang="en" dir="ltr" border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#E5E5E5" style="font-size:medium; font-size:max(16px, 1rem)" class="canvas">
+      <tr>
+        <td align="center" valign="top" bgcolor="#E5E5E5" style="background-color: #E5E5E5;" class="canvas">
+          <div style="max-width:620px; margin:0;">
+            <!--[if (gte mso 9)|(IE)]>
+            <table role="presentation" width="620" align="center" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td valign="top">
+            <![endif]-->
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="container" style="width:100%;">
+                    <tr>
+                      <td align="center" valign="top" bgcolor="#E5E5E5" style="background-color: #E5E5E5;">
+                        <!-- START CONTENT -->
+                        <!-- START MH101 -->
+
+                        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" align="left" bgcolor="#054A49" style="width:100%; background-color: #054A49;">
+                          <tr>
+                            <td valign="top" style="width:100%; text-align:left; padding: 10px;">
+
+                              <a href="%%=RedirectTo(Concat('https://shopify.com','?',@GA_params))=%%" target="_blank"><img class="light-img" alt="Shopify Logo" src="https://cdn.shopify.com/s/files/1/0070/7032/files/Shopify_Logo_Primary_green_white.png?v=1657834207" style="border-width:0;width:140px;max-width:140px;height:auto;display: block; outline: none; border: none;" width="140"></a>
+
+                              <!-- The following Dark Mode logo image is hidden 
+with MSO conditional code and inline CSS, but will be         
+revealed once Dark Mode is triggered -->
+
+                              <!--[if !mso]><! -->
+                                <div class="dark-img" style="display:none; overflow:hidden; float:left; width:0px; max-height:0px; max-width:0px; line-height:0px; visibility:hidden;text-align: left;" align="center">
+                                  <a href="%%=RedirectTo(Concat('https://shopify.com','?',@GA_params))=%%" target="_blank"><img alt="Shopify Logo" src="https://cdn.shopify.com/s/files/1/0070/7032/files/Shopify_Logo_Primary_green_white.png?v=1657834207" style="border-width:0;width:140px;max-width:140px;height:auto;display: block; outline: none; border: none;" width="140"></a>
+                              </div><!--<![endif]-->
+
+                            </td>
+                          </tr>
+                        </table>
+
+                        <!-- END MH101 -->
+                        <!-- START HC201 -->
+                        <table align="center" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;" width="100%">
+                          <tr>
+                            <td class="darkmode" style="width:100%;padding:0;margin:0;background-color: #ffffff;font-size: 0px; line-height: 0px;" valign="top">
+                              <a href="%%=RedirectTo(@admin_page)=%%" target="_blank"><img alt="White sneaker with black trim in illustrated box with a heart, next to box with font Aa and box with font I in italics, and a url reading www.yourstore.com" src="https://cdn.shopify.com/s/files/1/0070/7032/files/Growth_TrialOnboarding_2022_EN_Welcome_1_1.png?v=1657843682" style="width:100%;max-width:100%;height:auto;display:block;margin:0px;font-size: 0px; line-height: 0px;" width="620"></a>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td align="left" class="content px-2 darkmode" style="padding:40px 20px 0px; background-color:#ffffff;">
+                              <!--[if true]>
+                              <table width="420" class="darkmode" role="presentation" align="center" cellpadding="0" cellspacing="0">
+                                <tr>
+                                  <td>
+                              <![endif]-->
+
+                                    <table class="darkmode" role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;width:100%; max-width:420px;">
+
+                                      <tr>
+                                        <td class="body-text pb-0" style="padding:0px; color: #0A0B0D; font-family: 'ShopifySans', Arial, sans-serif; font-size:18px; line-height:24px; text-align: center;">
+                                          <h1 style="font-size: 24px; line-height: 36px; color: #0A0B0D; font-family: ShopifySans, Helvetica, Arial, sans-serif; font-weight: 700; margin: 0px 0px 20px 0px;text-align: center">Welcome to Shopify %%=v(@bucket_name)=%%</h1>
+                                          <p class="body-text-lg" style="margin:0;margin-bottom: 0px; font-family:'ShopifySans',sans-serif;font-size:16px;line-height:24px; font-weight:400; mso-height-rule:exactly; color:#0A0B0D; margin: 0px 0px 20px 0px;">
+                                            You made the right decision—Shopify powers millions of businesses worldwide, and we’re excited to help you&nbsp;build&nbsp;yours.
+                                          </p>
+                                        </td>
+                                      </tr>
+                                    </table>
+                              <!--[if true]>
+                                  </td>
+                                </tr>
+                              </table>
+                              <![endif]-->
+                            </td>
+                          </tr>
+                          <tr>
+                            <td align="center" class="content px-4 darkmode" style="padding:0 20px 20px; background-color:#ffffff;"><!-- CTA BUTTON -->
+                              <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="border: none; border-collapse: collapse; border-spacing: 0; margin: auto; mso-table-lspace: 0; mso-table-rspace: 0; border-radius:3px; background-color:#008060" bgcolor="#008060">
+                                <tbody>
+                                  <tr>
+                                    <td style="border-collapse:collapse; font-family:'ShopifySans', Arial, sans-serif; font-size: 16px; line-height: 22px; font-weight: bold; padding:0; border: 0; text-align:center; border-radius:3px; color:#ffffff; mso-padding-alt:14px 30px;" align="center"><a href="%%=RedirectTo(@admin_page)=%%" target="_blank" style="text-decoration:none; color:#ffffff; font-family:'ShopifySans', Arial, sans-serif; font-size: 16px; line-height: 22px; font-weight: bold; text-align:center; border-radius:3px;">
+                                        <!--[if !gte mso 9]><!----><span style="padding:14px 30px; border-radius:3px; display:block"><!--<![endif]--> Log in to your store 
+                            <!--[if !gte mso 9]><!----> </span><!--<![endif]-->
+                                      </a></td>
+                                  </tr>
+                                </tbody>
+                              </table>
+
+                              <!-- /CTA BUTTON --></td>
+                          </tr>
+                        </table>
+
+                        <!-- END HC201 -->
+                        <!-- START SN802 -->
+                        <table align="left" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;" width="100%">
+                          <tr>
+                            <td align="center" class="content darkmode" style="padding:0px 20px; background-color:#ffffff;">
+                              <!--[if true]>
+                              <table width="480" align="center" cellpadding="0" cellspacing="0">
+                                <tr>
+                                  <td>
+                              <![endif]-->
+
+                                    <table align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;width:100%;max-width:480px;">
+                                      <tr>
+                                        <td width="40" height="40" style="font-size:1px; line-height:1px; mso-line-height-rule: exactly;">
+                                          <hr style="border-width: 0; background: #b7b7b7; color: #b7b7b7; height:1px">
+                                        </td>
+                                      </tr>
+                                    </table>
+
+                              <!--[if true]>
+                                  </td>
+                                </tr>
+                              </table>
+                              <![endif]-->
+                            </td>
+                          </tr>
+                        </table>
+                        <!-- END SN802 -->
+                        
+                        %%[ if NOT EMPTY(@shop_contact_owner_email) then ]%%
+                        
+                        %%[ else ]%%
+                        <!-- START CC309 -->
+                        <table align="center" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;" width="100%">
+
+                          <tr>
+                            <td align="center" class="content px-2 darkmode" style="padding:0px 20px; background-color:#ffffff;">
+                              <!--[if true]>
+                              <table width="420" class="darkmode" role="presentation" align="center" cellpadding="0" cellspacing="0">
+                                <tr>
+                                  <td align="center">
+                              <![endif]-->
+                                    <table class="darkmode" role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;width:100%; max-width:420px;">
+                                      <tr>
+                                        <td align="center" class="content darkmode" style="padding:0px 0px 20px 0px; background-color:#ffffff;">
+                                          <a href="%%=RedirectTo(@admin_page)=%%" target="_blank"><img alt="Add products, customize store, register domain, set up payments, and launch store" src="https://cdn.shopify.com/s/files/1/0070/7032/files/Growth_TrialOnboarding_2022_EN_Welcome_1_2_v3.png?v=1657851876" style="width:100%; max-width:380;height:auto;display:block;margin:0px;font-size: 0px; line-height: 0px;" width="380"></a>
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td class="body-text pb-0" style="padding:0px; color: #0A0B0D; font-family: 'ShopifySans', Arial, sans-serif; font-size:18px; line-height:24px; text-align: center;">
+                                          <h2 style="font-size: 20px;line-height: 30px; color: #0A0B0D; font-family: ShopifySans, Helvetica, Arial, sans-serif; font-weight: 700; margin: 0px 0px 20px 0px;text-align: center"> Welcome to day one! </h2>
+                                          <p class="body-text-lg" style="margin:0;margin-bottom: 0px; font-family:'ShopifySans',sans-serif;font-size:16px;line-height:24px; font-weight:400; mso-height-rule:exactly; color:#0A0B0D; margin: 0px 0px 20px 0px;">
+                                            Over the next two weeks, we'll send you a series of emails to help guide you through the five key steps to setting up your store, so you can keep focusing on your business.
+                                          </p>
+                                        </td>
+                                      </tr>
+                                    </table>
+                              <!--[if true]>
+                                  </td>
+                                </tr>
+                              </table>
+                              <![endif]-->
+                            </td>
+                          </tr>
+                        </table>
+                        <!-- END CC309 -->
+                        <!-- START SN802 -->
+                        <table align="left" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;" width="100%">
+                          <tr>
+                            <td align="center" class="content darkmode" style="padding:0px 20px; background-color:#ffffff;">
+                              <!--[if true]>
+                              <table width="480" align="center" cellpadding="0" cellspacing="0">
+                                <tr>
+                                  <td>
+                              <![endif]-->
+
+                                    <table align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;width:100%;max-width:480px;">
+                                      <tr>
+                                        <td width="40" height="40" style="font-size:1px; line-height:1px; mso-line-height-rule: exactly;">
+                                          <hr style="border-width: 0; background: #b7b7b7; color: #b7b7b7; height:1px">
+                                        </td>
+                                      </tr>
+                                    </table>
+
+                              <!--[if true]>
+                                  </td>
+                                </tr>
+                              </table>
+                              <![endif]-->
+                            </td>
+                          </tr>
+                        </table>
+                        <!-- END SN802 -->
+                         %%[ endif ]%%
+                        
+                        %%[IF @show_block == 0 THEN]%%
+                        <!-- START CC309 VARIATION A -->
+                        <table align="center" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;" width="100%">
+
+                          <tr>
+                            <td align="left" class="content px-2 darkmode" style="padding:0px 20px 0px; background-color:#ffffff;">
+                              <!--[if true]>
+                              <table width="420" class="darkmode" role="presentation" align="center" cellpadding="0" cellspacing="0">
+                                <tr>
+                                  <td>
+                              <![endif]-->
+
+                                    <table class="darkmode" role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;width:100%; max-width:420px;">
+                                      <tr>
+                                        <td align="center" class="content darkmode" style="padding:0px 20px 40px 0px; background-color:#ffffff;">
+                                          <a href="%%=RedirectTo(Concat('https://www.youtube.com/watch?v=GtDPjlUToKU','?',@GA_params))=%%" target="_blank"><img alt="A creator sews fabric using a sewing machine at a desk near a window in a sunny studio, with colorful art on the wall." src="https://cdn.shopify.com/s/files/1/0070/7032/files/Growth_TrialOnboarding_2022_EN_Welcome_1_3.png?v=1657843682" style="width:100%; max-width:380px;height:auto;display:block;margin:0px;font-size: 0px; line-height: 0px;" width="380"></a>
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td class="body-text pb-0" style="padding:0px; color: #0A0B0D; font-family: 'ShopifySans', Arial, sans-serif; font-size:18px; line-height:24px; text-align: center;">
+                                          <h2 style="font-size: 20px;line-height: 30px; color: #0A0B0D; font-family: ShopifySans, Helvetica, Arial, sans-serif; font-weight: 700; margin: 0px 0px 20px 0px;text-align: center">Start building your business, your&nbsp;way</h2>
+                                          <p class="body-text-lg" style="margin:0;margin-bottom: 0px; font-family:'ShopifySans',sans-serif;font-size:16px;line-height:24px; font-weight:400; mso-height-rule:exactly; color:#0A0B0D; margin: 0px 0px 20px 0px;">
+                                            Shopify makes it easier to sell online, in retail stores, on social, and on-the-go from your phone. You keep total control of your store and customer relationships.
+                                          </p>
+                                        </td>
+                                      </tr>
+                                    </table>
+                              <!--[if true]>
+                                  </td>
+                                </tr>
+                              </table>
+                              <![endif]-->
+                            </td>
+                          </tr>
+                          <tr>
+                            <td align="center" class="content px-4 darkmode" style="padding:0 20px 40px; background-color:#ffffff;"><!-- CTA BUTTON -->
+                              <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="border: none; border-collapse: collapse; border-spacing: 0; margin: auto; mso-table-lspace: 0; mso-table-rspace: 0; border-radius:3px; background-color:#008060" bgcolor="#008060">
+                                <tbody>
+                                  <tr>
+                                    <td style="border-collapse:collapse; font-family:'ShopifySans', Arial, sans-serif; font-size: 16px; line-height: 22px; font-weight: bold; padding:0; border: 0; text-align:center; border-radius:3px; color:#ffffff; mso-padding-alt:14px 30px;" align="center"><a href="%%=RedirectTo(Concat('https://www.youtube.com/watch?v=GtDPjlUToKU','?',@GA_params))=%%" target="_blank" style="text-decoration:none; color:#ffffff; font-family:'ShopifySans', Arial, sans-serif; font-size: 16px; line-height: 22px; font-weight: bold; text-align:center; border-radius:3px;">
+                                        <!--[if !gte mso 9]><!----><span style="padding:14px 30px; border-radius:3px; display:block"><!--<![endif]-->Learn about Shopify
+                            <!--[if !gte mso 9]><!----> </span><!--<![endif]-->
+                                      </a></td>
+                                  </tr>
+                                </tbody>
+                              </table>
+
+                              <!-- /CTA BUTTON --></td>
+                          </tr>
+                        </table>
+                        <!-- END CC309 VARIATION A -->
+                        
+                          %%[ else ]%%
+                        <!-- START CC309 VARIATION B DROPSHIPPING -->
+                        <table align="center" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;" width="100%">
+
+                          <tr>
+                            <td align="left" class="content px-2 darkmode" style="padding:0px 20px 0px; background-color:#ffffff;">
+                              <!--[if true]>
+                              <table width="420" class="darkmode" role="presentation" align="center" cellpadding="0" cellspacing="0">
+                                <tr>
+                                  <td>
+                              <![endif]-->
+
+                                    <table class="darkmode" role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;width:100%; max-width:420px;">
+                                      <tr>
+                                        <td align="center" class="content darkmode" style="padding:0px 20px 40px 0px; background-color:#ffffff;">
+                                          <a href="%%=RedirectTo(Concat(@image_url,'?',@GA_params))=%%" target="_blank"><img alt="%%=v(@image_alt)=%%" src="%%=v(@image)=%%" style="width:100%; max-width:380px;height:auto;display:block;margin:0px;font-size: 0px; line-height: 0px;" width="380"></a>
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td class="body-text pb-0" style="padding:0px; color: #0A0B0D; font-family: 'ShopifySans', Arial, sans-serif; font-size:18px; line-height:24px; text-align: center;">
+                                          <h2 style="font-size: 20px;line-height: 30px; color: #0A0B0D; font-family: ShopifySans, Helvetica, Arial, sans-serif; font-weight: 700; margin: 0px 0px 20px 0px;text-align: center">%%=v(@title)=%%</h2>
+                                          <p class="body-text-lg" style="margin:0;margin-bottom: 0px; font-family:'ShopifySans',sans-serif;font-size:16px;line-height:24px; font-weight:400; mso-height-rule:exactly; color:#0A0B0D; margin: 0px 0px 20px 0px;">%%=v(@paragraph_1)=%%
+                                            
+                                          <p class="body-text-lg" style="margin:0;margin-bottom: 0px; font-family:'ShopifySans',sans-serif;font-size:16px;line-height:24px; font-weight:400; mso-height-rule:exactly; color:#0A0B0D; margin: 0px 0px 20px 0px;">%%=v(@paragraph_2)=%%
+                                          <p class="body-text-lg" style="margin:0;margin-bottom: 0px; font-family:'ShopifySans',sans-serif;font-size:16px;line-height:24px; font-weight:400; mso-height-rule:exactly; color:#0A0B0D; margin: 0px 0px 20px 0px;">%%=v(@paragraph_3)=%%
+                                        </td>
+                                      </tr>
+                                    </table>
+                              <!--[if true]>
+                                  </td>
+                                </tr>
+                              </table>
+                              <![endif]-->
+                            </td>
+                          </tr>
+                          <tr>
+                            <td align="center" class="content px-4 darkmode" style="padding:0 20px 40px; background-color:#ffffff;"><!-- CTA BUTTON -->
+                              <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="border: none; border-collapse: collapse; border-spacing: 0; margin: auto; mso-table-lspace: 0; mso-table-rspace: 0; border-radius:3px; background-color:#008060" bgcolor="#008060">
+                                <tbody>
+                                  <tr>
+                                    <td style="border-collapse:collapse; font-family:'ShopifySans', Arial, sans-serif; font-size: 16px; line-height: 22px; font-weight: bold; padding:0; border: 0; text-align:center; border-radius:3px; color:#ffffff; mso-padding-alt:14px 30px;" align="center"><a href="%%=RedirectTo(Concat(@cta_url,'?',@GA_params))=%%" target="_blank" style="text-decoration:none; color:#ffffff; font-family:'ShopifySans', Arial, sans-serif; font-size: 16px; line-height: 22px; font-weight: bold; text-align:center; border-radius:3px;">
+                                        <!--[if !gte mso 9]><!----><span style="padding:14px 30px; border-radius:3px; display:block"><!--<![endif]-->%%=v(@cta_text)=%%
+                            <!--[if !gte mso 9]><!----> </span><!--<![endif]-->
+                                      </a></td>
+                                  </tr>
+                                </tbody>
+                              </table>
+
+                              <!-- /CTA BUTTON --></td>
+                          </tr>
+                        </table>
+                        <!-- END CC309 VARIATION B DROPSHIPPING -->                    
+                       
+                         %%[ endif ]%%
+                         %%[ if @replatformers == 1 then ]%%
+                        <!-- START BC604 -->
+                        <table align="left" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;" width="100%">
+                          <tr>
+                            <td dir="ltr" width="100%" style="padding:20px 40px; background-color:#054A49;">
+                              <!--[if mso]>
+                              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                <tr>
+                                  <td width="420">
+                              <![endif]-->
+                                    <table role="presentation" border="0" align="center" cellpadding="0" cellspacing="0" width="80%" class="force-row">
+                                      <tr>
+                                        <!-- Column : BEGIN -->
+                                        <th width="30%" class="mob-stack mob-stack-center" valign="middle">
+                                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                            <tr>
+                                              <td dir="ltr" valign="middle" align="center" style="padding:20px;">
+                                                <a href="%%=RedirectTo(Concat('https://help.shopify.com/en/manual/migrating-to-shopify/shopify-import','?',@GA_params))=%%" target="_blank"><img src="https://cdn.shopify.com/s/files/1/0070/7032/files/Growth_TrialOnboarding_2022_EN_icon_store.png?v=1657845051" width="64" height="auto" alt="Box Icon" border="0" class="center-on-narrow" style="max-width:64px; display: block; height: auto;"></a>
+                                              </td>
+                                            </tr>
+                                          </table>
+                                        </th>
+                                        <!-- Column : END -->
+                                        <!-- Column : BEGIN -->
+                                        <th width="70%" class="mob-stack" valign="middle">
+                                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                            <tr>
+                                              <td class="hide" style="padding-top:20px;"></td>
+                                            </tr>
+                                            <tr>
+                                              <td dir="ltr" style="padding:0; font-family:'ShopifySans', Arial, sans-serif; font-size: 24px; line-height: 36px; color: #ffffff; text-align: left;">
+                                                <p class="bc-body-text" style="margin:0; margin-bottom:0px; font-family:'ShopifySans', Arial, sans-serif; font-size:16px;line-height:24px; font-weight:400; text-align:left; mso-height-rule:exactly; color:#ffffff;"> Looking to move an existing store to&nbsp;Shopify?<br><a href="%%=RedirectTo(Concat('https://help.shopify.com/en/manual/migrating-to-shopify/shopify-import','?',@GA_params))=%%" target="_blank" class="link" style="text-decoration: underline; color:#D0F224;">Start here</a></p>
+                                              </td>
+                                            </tr>
+                                            <tr>
+                                              <td class="mbl-show" style="padding-bottom:20px;"></td>
+                                            </tr>
+                                          </table>
+                                        </th>
+                                        <!-- Column : END -->
+                                      </tr>
+                                    </table>
+                              <!--[if mso]>
+                                  </td>
+                                </tr>
+                              </table>
+                              <![endif]-->
+                            </td>
+                          </tr>
+                        </table>
+                        <!-- END BC604 -->
+                         %%[ else ]%%
+                         %%[ endif ]%%
+                        <!-- START FT702 -->
+
+                        <table align="left" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;background-color: #ffffff;" width="100%">
+                          <tr>
+                            <td class="px-2 darkmode" style="padding-top:0;padding-bottom:0;padding-right:40px;padding-left:40px;background-color:#ffffff;">
+                              <table bgcolor="#ffffff" border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="border-spacing:0;font-family: 'ShopifySans', Arial, sans-serif;">
+                                <tr>
+                                  <td bgcolor="#ffffff" class="darkmode pt-3" style="width:100%; padding-top:40px; padding-bottom:0px; padding-right:0px; padding-left:0px; background-color: #ffffff; color: #000000; font-family: 'ShopifySans', Arial, sans-serif; font-size:14px; line-height:20px; text-align:center;">
+                                    <h3 style="font-size: 16px; color: #000000; line-height:20px;  font-weight: 700; margin:0; margin-bottom: 10px;text-align:center" class="">Get tips and tutorials to help you&nbsp;build&nbsp;your&nbsp;store</h3>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td width="100%" bgcolor="#ffffff" class="darkmode" style="padding-top:0px;padding-bottom:20px;padding-right:0px;padding-left:0px;text-align:center;border-collapse: collapse;">
+                                    <div style="max-width: 420px; margin: auto;">
+                                      <!--[if mso]>
+                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="420" align="center">
+                                        <tr>
+                                          <td>
+                                      <![endif]-->
+
+                                            <!-- Email Header : BEGIN -->
+                                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="max-width: 420px;">
+
+                                              <!-- 4 Even Columns : BEGIN -->
+                                              <tr>
+                                                <td class="darkmode" bgcolor="#ffffff" align="center" height="100%" valign="top" width="100%" style="padding: 10px 0;"><!--[if mso]>
+                                                  <table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" width="420">
+                                                    <tr>
+                                                      <td align="center" valign="top" width="420">
+                                                <![endif]-->
+
+                                                        <table class="darkmode" role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" width="100%" style="max-width: 420px;">
+                                                          <tr>
+                                                            <td align="center" valign="top" style="font-size:0;width: 100%;"><!--[if mso]>
+                                                              <table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" width="420">
+                                                                <tr>
+
+                                                                  <td align="left">
+                                                            <![endif]-->
+
+                                                                    <div style="display:inline-block; margin: 10px; max-width:80px; min-width:30px; vertical-align:top;">
+                                                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                                        <tr>
+                                                                          <td valign="top" style="font-family: 'ShopifySans', Arial, sans-serif; font-weight:400; text-align: center;min-width: 30px;font-size: 16px; line-height: 20px;padding: 0px;color:#008060;"><a href="%%=RedirectTo(Concat('https://www.shopify.com/learn','?',@GA_params))=%%" class="link" target="_blank" style="text-decoration: underline; color:#008060;"> Webinars </a></td>
+                                                                        </tr>
+                                                                      </table>
+                                                                    </div>
+
+                                                                    <!--[if mso]>
+                                                                  </td>
+                                                                  <td align="left">
+                                                                    <![endif]-->
+
+                                                                    <div style="display:inline-block; margin: 10px; max-width:60px; min-width:30px; vertical-align:top;">
+                                                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                                        <tr>
+                                                                          <td valign="top" style="font-family: 'ShopifySans', Arial, sans-serif; font-weight:400; text-align: center;min-width: 30px;font-size: 16px; line-height: 20px;padding: 0px;color:#008060;"><a href="%%=RedirectTo(Concat('https://shopify.com/guides','?',@GA_params))=%%" class="link" target="_blank" style="text-decoration: underline; color:#008060;"> Guides </a></td>
+                                                                        </tr>
+                                                                      </table>
+                                                                    </div>
+
+
+                                                                    <!--[if mso]>
+                                                                  </td>
+                                                                  <td align="left">
+                                                                    <![endif]-->
+
+                                                                    <div style="display:inline-block; margin: 10px; max-width:60px; min-width:30px; vertical-align:top;">
+                                                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                                        <tr>
+                                                                          <td valign="top" style="font-family: 'ShopifySans', Arial, sans-serif; font-weight:400; text-align: center;min-width: 30px;font-size: 16px; line-height: 20px;padding: 0px;color:#008060;"><a href="%%=RedirectTo(Concat('https://shopify.com/blog','?',@GA_params))=%%" class="link" target="_blank" style="text-decoration: underline; color:#008060;"> Blog </a></td>
+                                                                        </tr>
+                                                                      </table>
+                                                                    </div>
+
+                                                                    <!--[if mso]>
+                                                                  </td>
+                                                                  <td align="left">
+                                                                    <![endif]-->
+
+                                                                    <div style="display:inline-block; margin: 10px; max-width:120px; min-width:30px; vertical-align:top;">
+                                                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                                        <tr>
+                                                                          <td valign="top" style="font-family: 'ShopifySans', Arial, sans-serif; font-weight:400; text-align: center;min-width: 30px;font-size: 16px; line-height: 20px;padding: 0px;color:#008060;"><a href="%%=RedirectTo(Concat('https://help.shopify.com','?',@GA_params))=%%" class="link" target="_blank" style="text-decoration: underline; color:#008060;"> Help Center </a></td>
+                                                                        </tr>
+                                                                      </table>
+                                                                    </div>
+
+                                                              <!--[if mso]>
+                                                                  </td>
+                                                                </tr>
+                                                              </table>
+                                                              <![endif]--></td>
+                                                          </tr>
+                                                        </table>
+
+                                                  <!--[if mso]>
+                                                      </td>
+                                                    </tr>
+                                                  </table>
+                                                  <![endif]--></td>
+                                              </tr>
+                                              <!-- 4 Even Columns : END -->
+
+                                            </table>
+                                            <!-- Email Footer : END -->
+
+                                      <!--[if mso]>
+                                          </td>
+                                        </tr>
+                                      </table>
+                                      <![endif]-->
+                                    </div>
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                        </table>
+
+                        <!-- END FT702 -->
+                        <!-- START FT704 -->
+                        <table align="left" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;" width="100%">
+                          <tr>
+                            <td width="100%" bgcolor="#ffffff" class="content darkmode" style="padding-top:0px;padding-bottom:0px;padding-right:0px;padding-left:0px;text-align:center;border-collapse: collapse;">
+                              <table class="darkmode" role="presentation" width="100%" style="border-spacing:0; background-color:#ffffff; font-family: 'ShopifySans', Arial, sans-serif;">
+                                <tr>
+                                  <td width="100%" bgcolor="#ffffff" class="content darkmode" style="padding-top:0px;padding-bottom:0px;padding-right:0px;padding-left:0px;text-align:center;border-collapse: collapse;"><!--
+      Set the email width. Defined in two places:
+      1. max-width for all clients except Desktop Windows Outlook, allowing the email to squish on narrow but never go wider than 570px.
+      2. MSO tags for Desktop Windows Outlook enforce a 570px width.
+      Note: The Fluid and Responsive templates have a different width (600px). The hybrid grid is more "fragile", and I've found that 570px is a good width. Change with caution.
+  -->
+
+                                    <div style="max-width: 570px; margin: auto;">
+                                      <!--[if mso]>
+                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="570" align="center">
+                                        <tr>
+                                          <td>
+                                      <![endif]-->
+
+                                            <!-- Email Header : BEGIN -->
+                                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="max-width: 570px;">
+
+                                              <!-- 3 Even Columns : BEGIN -->
+                                              <tr>
+                                                <td class="darkmode" bgcolor="#ffffff" align="center" height="100%" valign="top" width="100%" style="padding: 0px 0px 0px 0px;"><!--[if mso]>
+                                                  <table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" width="570">
+                                                    <tr>
+                                                      <td align="center" valign="top" width="570">
+                                                <![endif]-->
+
+                                                        <table class="darkmode" role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" width="100%" style="max-width: 340px;">
+                                                          <tr>
+                                                            <td align="center" valign="top" style="font-size:0px;line-height: 0px;width: 100%;"><!--[if mso]>
+                                                              <table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" width="340">
+                                                                <tr>
+                                                            <![endif]-->
+
+                                                                  <!--[if mso]>
+                                                                  <td align="left" valign="top" width="32" style="padding:3px 0px 2px 0px;">
+                                                                  <![endif]-->
+
+                                                                    <div style="display:inline-block; margin: 0 4px; max-width:11%; min-width:32px; vertical-align:top;">
+                                                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                                        <tr>
+                                                                          <td valign="top" style="width: 32px; height: 32px;font-family: 'ShopifySans', Arial, sans-serif; font-weight:400; text-align: center;min-width: 32px;"><a alias="facebook" href="https://www.facebook.com/shopify" target="_blank" style="text-decoration: none; color:#606366;"> <img border="0" src="https://cdn.shopify.com/s/files/1/0070/7032/files/fb-dark.png?v=1652905621" alt="Facebook" width="32" height="32" style="display:inline-block; width:32px;" /></a></td>
+                                                                        </tr>
+                                                                      </table>
+                                                                    </div>
+
+                                                                  <!--[if mso]>
+                                                                  </td>
+                                                                  <![endif]-->
+
+                                                                  <!--[if mso]>
+                                                                  <td align="left" valign="top" width="32" style="padding:3px 0px 2px 0px;">
+                                                                  <![endif]-->
+
+                                                                    <div style="display:inline-block; margin: 0 4px; max-width:11%; min-width:32px; vertical-align:top;">
+                                                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                                        <tr>
+                                                                          <td valign="top" style="width: 32px; height: 32px;font-family: 'ShopifySans', Arial, sans-serif; font-weight:400; text-align: center;"><a alias="twitter" href="https://twitter.com/shopify" target="_blank" style="text-decoration: none; color:#606366;"> <img border="0" src="https://cdn.shopify.com/s/files/1/0070/7032/files/twitter-dark.png?v=1652905620" alt="Twitter" width="32" height="32" style="display:inline-block; width:32px;" /></a></td>
+                                                                        </tr>
+                                                                      </table>
+                                                                    </div>
+
+                                                                  <!--[if mso]>
+                                                                  </td>
+                                                                  <![endif]-->
+
+                                                                  <!--[if mso]>
+                                                                  <td align="left" valign="top" width="32" style="padding:3px 0px 2px 0px;">
+                                                                  <![endif]-->
+
+                                                                    <div style="display:inline-block; margin: 0 4px; max-width:11%; min-width:32px; vertical-align:top;">
+                                                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                                        <tr>
+                                                                          <td valign="top" style="width: 32px; height: 32px;font-family: 'ShopifySans', Arial, sans-serif; font-weight:400; text-align: center;"><a alias="instagram" href="https://www.instagram.com/shopify/" target="_blank" style="text-decoration: none; color:#606366;"> <img border="0" src="https://cdn.shopify.com/s/files/1/0070/7032/files/insta-dark.png?v=1652905620" alt="Instagram" width="32" height="32" style="display:inline-block; width:32px;" /></a></td>
+                                                                        </tr>
+                                                                      </table>
+                                                                    </div>
+
+                                                                  <!--[if mso]>
+                                                                  </td>
+                                                                  <![endif]-->
+
+                                                                  <!--[if mso]>
+                                                                  <td align="left" valign="top" width="32" style="padding:3px 0px 2px 0px;">
+                                                                  <![endif]-->
+
+                                                                    <div style="display:inline-block; margin: 0 4px; max-width:11%; min-width:32px; vertical-align:top;">
+                                                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                                        <tr>
+                                                                          <td valign="top" style="width: 32px; height: 32px;font-family: 'ShopifySans', Arial, sans-serif; font-weight:400; text-align: center;"><a alias="tiktok" href="https://www.tiktok.com/@shopify" target="_blank" style="text-decoration: none; color:#606366;"> <img border="0" src="https://cdn.shopify.com/s/files/1/0070/7032/files/tiktok-dark.png?v=1652905620" alt="TikTok" width="32" height="32" style="display:inline-block; width:32px;" /></a></td>
+                                                                        </tr>
+                                                                      </table>
+                                                                    </div>
+
+                                                                  <!--[if mso]>
+                                                                  </td>
+                                                                  <![endif]-->
+
+                                                                  <!--[if mso]>
+                                                                  <td align="left" valign="top" width="32" style="padding:3px 0px 2px 0px;">
+                                                                  <![endif]-->
+
+                                                                    <div style="display:inline-block; margin: 0 4px; max-width:11%; min-width:32px; vertical-align:top;">
+                                                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                                        <tr>
+                                                                          <td valign="top" style="width: 32px; height: 32px;font-family: 'ShopifySans', Arial, sans-serif; font-weight:400; text-align: center;"><a alias="LinkedIn" href="https://www.linkedin.com/company/shopify/" target="_blank" style="text-decoration: none; color:#606366;"> <img border="0" src="https://cdn.shopify.com/s/files/1/0070/7032/files/linkedin-dark.png?v=1652905620" alt="LinkedIn" width="32" height="32" style="display:inline-block; width:32px;" /></a></td>
+                                                                        </tr>
+                                                                      </table>
+                                                                    </div>
+
+                                                                  <!--[if mso]>
+                                                                  </td>
+                                                                  <![endif]-->
+
+                                                                  <!--[if mso]>
+                                                                  <td align="left" valign="top" width="32" style="padding:3px 0px 2px 0px;">
+                                                                  <![endif]-->
+
+                                                                    <div style="display:inline-block; margin: 0 4px; max-width:11%; min-width:32px; vertical-align:top;">
+                                                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                                        <tr>
+                                                                          <td valign="top" style="width: 32px; height: 32px;font-family: 'ShopifySans', Arial, sans-serif; font-weight:400; text-align: center;margin: 0px 0px;"><a alias="pinterest" href="https://www.pinterest.com/shopify/" target="_blank" style="text-decoration: none; color:#606366;"> <img border="0" src="https://cdn.shopify.com/s/files/1/0070/7032/files/pinterest-dark_9efcff87-2b6b-4347-b5ea-4addc609085b.png?v=1653403420" alt="Pinterest" width="32" height="32" style="display:inline-block; width:32px;" /></a></td>
+                                                                        </tr>
+                                                                      </table>
+                                                                    </div>
+
+                                                                  <!--[if mso]>
+                                                                  </td>
+                                                                  <![endif]-->
+
+                                                                  <!--[if mso]>
+                                                                  <td align="left" valign="top" width="32" style="padding:3px 0px 2px 0px;">
+                                                                  <![endif]-->
+
+                                                                    <div style="display:inline-block; margin: 0 4px; max-width:11%; min-width:32px; vertical-align:top;">
+                                                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                                        <tr>
+                                                                          <td valign="top" style="width: 32px; height: 32px;font-family: 'ShopifySans', Arial, sans-serif; font-weight:400; text-align: center;"><a alias="youtube" href="https://www.youtube.com/shopify" target="_blank" style="text-decoration: none; color:#606366;"> <img border="0" src="https://cdn.shopify.com/s/files/1/0070/7032/files/YT-dark.png?v=1652905620" alt="YouTube" width="32" height="32" style="display:inline-block; width:32px;" /></a></td>
+                                                                        </tr>
+                                                                      </table>
+                                                                    </div>
+
+                                                                  <!--[if mso]>
+                                                                  </td>
+                                                                  <![endif]-->
+
+
+                                                              <!--[if mso]>
+                                                                </tr>
+                                                              </table>
+                                                              <![endif]--></td>
+                                                          </tr>
+                                                        </table>
+
+                                                  <!--[if mso]>
+                                                      </td>
+                                                    </tr>
+                                                  </table>
+                                                  <![endif]--></td>
+                                              </tr>
+                                              <!-- 3 Even Columns : END -->
+
+                                            </table>
+                                            <!-- Email Footer : END -->
+
+                                      <!--[if mso]>
+                                          </td>
+                                        </tr>
+                                      </table>
+                                      <![endif]-->
+                                    </div>
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                        </table>
+                        <!-- END FT704 -->
+                        <!-- START FT706 -->
+                        <table align="left" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;" width="100%">
+                          <tr>
+                            <td class="one-column px-4 darkmode" style="padding-top:0;padding-bottom:0;padding-right:80px;padding-left:80px;background-color:#ffffff;">
+                              <table bgcolor="#ffffff" border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="border-spacing:0;font-family: 'ShopifySans', Arial, sans-serif;">
+                                <tr>
+                                  <td bgcolor="#ffffff" class="body-text-sm darkmode px-0" style="width:100%; padding-top:20px; padding-bottom:20px; padding-right:20px; padding-left:20px; background-color: #ffffff; color: #0A0B0D; font-family: 'ShopifySans', Arial, sans-serif; font-size:14px; line-height:20px; text-align:center;">
+                                    <p style="margin:0 auto;margin-bottom: 20px; line-height: 18px; font-family: 'ShopifySans', Arial, sans-serif; font-size: 12px; font-weight: 400;color:#0A0B0D;"> <span class="legal" style="font-family: ShopifySans, 'Helvetica Neue', Helvetica, sans-serif; font-size: 12px; font-weight: 400;color:#0A0B0D;">&copy; Shopify, 15&#8205;1 O'Con&#8205;nor&nbsp;Str&#8205;eet, Gro&#8205;und&nbsp;fl&#8205;oor,<br class="mbl-hide">
+            Ot&#8205;tawa&nbsp;ON, K2P&nbsp;2L8
+            </span> </p>
+                                    <p style="margin:0 auto;margin-bottom: 10px; line-height: 24px; font-family: 'ShopifySans', Arial, sans-serif; font-size: 12px; font-weight: 400;color:#0A0B0D;"> <a href="%%=RedirectTo(CloudPagesURL(626,'lang','en'))=%%" alias="Unsubscribe" style="color:#0A0B0D;font-size:12px;text-decoration:underline;">Unsubscribe</a> <br> <a href="%%=RedirectTo(CloudPagesURL(581,'lang','en'))=%%" alias="Manage profile" style="color:#0A0B0D;font-size:12px;text-decoration:none;">Manage your email preferences</a> </p>
+                                    
+                                    
+                                   <!-- %%[
+                                   SET @hashEmail = emailaddr
+                                   SET @hashJobID = jobid
+                                   ]%% --> 
+                                  <script runat="server">
+                                    Platform.Load('Core','1');
+                                    var d = new Date();
+                                    var n = Math.round(d.getTime() / 1000);
+                                    var h = n.toString(16);
+                                    Platform.Variable.SetValue("@epoch",h);
+                                    function hmacMD5(key, message) {
+                                     var i;
+                                     ipad = "";
+                                     opad = "";
+                                     for (i = 0; i < key.length; i++) {
+                                       ipad += String.fromCharCode(key.charCodeAt(i) ^ 0x36);
+                                       opad += ("0" + (key.charCodeAt(i) ^ 0x5c).toString(16)).slice(-2);
+                                     }
+                                     for (; i < 64; i++) {
+                                       ipad += String.fromCharCode(0x36);
+                                       opad += "5c";
+                                     }
+                                     var innerhash = Platform.Function.MD5(ipad + message, 'UTF-8');
+                                     var inner = opad + innerhash;
+                                     var innerUTF16 = "";
+                                     for (i = 0; i < 2 * (64 + 16); i += 4) {
+                                       byte1 = parseInt(inner.substring(i, i+2), 16);
+                                       byte2 = parseInt(inner.substring(i+2, i+4), 16);
+                                       innerUTF16 += String.fromCharCode(byte1 + 256 * byte2);
+                                     }
+                                     return Platform.Function.MD5(innerUTF16, 'UTF-16');
+                                    }    
+                                    var hashEmail = Platform.Variable.GetValue('@hashEmail');
+                                    var hashJobID = Platform.Variable.GetValue('@hashJobID');
+                                    var hashMessage = [h, hashEmail, hashJobID].join("\n");
+                                    Platform.Variable.SetValue("@md5", hmacMD5('antiphishing', hashMessage));
+                                  </script>
+                                  <p style="margin:0 auto;margin-bottom: 10px; line-height: 1.5em; font-family: ShopifySans, Roboto, 'Helvetica Neue', Helvetica, sans-serif; font-size: 11px; font-weight: 400;color:#454F5B;"> 
+                                    <span style="font-size: 9px;word-break: break-all">Shopify.MailID:1-1.%%=v(@epoch)=%%.%%jobid%%.%%=v(@md5)=%%</span> 
+                                    <br>
+                                    <br>
+                                    <span style="font-size: 9px; color: #FFFFFF">%%=v(@campaign_code)=%%</span> 
+                                  </p>
+
+                                    
+                                    
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                        </table>
+                        <!-- END FT706 -->
+                        <!-- END CONTENT -->
+                      </td>
+                    </tr>
+                  </table>
+            <!--[if (gte mso 9)|(IE)]>
+                </td>
+              </tr>
+            </table>
+            <![endif]-->
+          </div>
+        </td>
+      </tr>
+    </table>
+    <!--/100% background wrapper-->
+    <custom name="opencounter" type="tracking"/>
+  </body>
+</html>
