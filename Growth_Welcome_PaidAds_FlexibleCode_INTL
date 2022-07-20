@@ -1,0 +1,150 @@
+
+%%[
+
+SET @shop_contact_owner_first_name = ProperCase(Replace(Replace([shop_contact_owner_first_name],">","&gt;"),"<","&lt;"))
+SET @shop_id = [shop_id]
+
+SET @shop_contact_permanent_domain = [shop_contact_permanent_domain]
+SET @admin_page = Concat('https://',@shop_contact_permanent_domain,'/admin')
+SET @shop_contact_owner_email = [shop_contact_owner_email]
+SET @shop_contact_shop_name = [shop_contact_shop_name]
+SET @shop_conversion_ten_field_completed_at = [shop_conversion_ten_field_completed_at]
+SET @contact_key = [contact_key]
+SET @shop_conversion_raw_signup_page = [shop_conversion_raw_signup_page]
+
+SET @shop_contact_owner_locale = [shop_contact_owner_locale]
+
+/* Set analytics here */
+SET @GA_params = "utm_source=exacttarget&utm_medium=email&utm_campaign=onboarding&utm_content=int_1_wel"
+
+
+
+
+/* Set language for footer */
+SET @shop_contact_owner_locale = [shop_contact_owner_locale]
+SET @lang = Substring(@shop_contact_owner_locale,1,2)
+
+IF @lang == "pt" THEN
+ IF @shop_contact_owner_locale == "pt-BR" THEN
+  SET @lang = "pt-BR"
+ ELSE
+  SET @lang = "pt-PT"
+ ENDIF
+ELSEIF @lang == "zh" or @lang == "ha" THEN
+ IF @shop_contact_owner_locale == "zh-CN" OR @shop_contact_owner_locale == "hans" THEN
+  SET @lang = "zh-CN"
+ ELSE
+  SET @lang = "zh-TW"
+ ENDIF
+ENDIF
+
+IF @lang != "fr" 
+AND @lang != "it"
+AND @lang != "ja"
+AND @lang != "nl"
+AND @lang != "pt-BR"
+AND @lang != "zh-CN"
+AND @lang != "zh-TW"
+THEN
+ RaiseError("no valid language",1)
+ENDIF
+
+
+
+
+/****************************/
+/* Paid Ads Dynamic Content */
+/****************************/
+
+set @shop_conversion_raw_signup_page = [shop_conversion_raw_signup_page] 
+set @index_of = indexOf(@shop_conversion_raw_signup_page, "bucket=")
+
+if @index_of > 0 then 
+  set @substring = Substring(@shop_conversion_raw_signup_page, @index_of)
+  set @bucket_name1 = Substring(@substring,1, Subtract(IndexOf(@substring,"&"),1))
+
+/* isolating the bucket_name parameter content when its in the middle of the url  */
+if IndexOf(@bucket_name1,'_ES') > 0 then
+set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_ES"),1))
+elseif IndexOf(@bucket_name1,'_PTBR') > 0 then
+set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_PTBR"),1))
+elseif IndexOf(@bucket_name1,'_FR') > 0 then
+set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_FR"),1))
+elseif IndexOf(@bucket_name1,'_DE&') > 0 then
+set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_DE"),1))
+elseif IndexOf(@bucket_name1,'_IT') > 0 then
+set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_IT"),1))
+else   
+set @bucket_name = Substring(@substring,1, Subtract(IndexOf(@substring,"&"),1))
+endif 
+
+if @lang == 'ES' then 
+set @bucket_name = CONCAT(@bucket_name,'_ES')
+elseif @lang == 'PT-BR' then
+set @bucket_name = CONCAT(@bucket_name,'_PTBR')
+elseif @lang == 'fr' then
+set @bucket_name = CONCAT(@bucket_name,'_FR')
+elseif @lang == 'DE' then
+set @bucket_name = CONCAT(@bucket_name,'_DE')
+elseif @lang == 'IT' then
+set @bucket_name = CONCAT(@bucket_name,'_IT')
+endif
+
+
+/* check if this utm needs specific content */
+  if Length(Lookup("PaidSegments_Email_Content", "shop_conversion_raw_signup_page", "shop_conversion_raw_signup_page", @bucket_name)) > 0  then
+    set @title = Lookup("PaidSegments_Email_Content", "title", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @image = Lookup("PaidSegments_Email_Content", "image", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @image_url = Lookup("PaidSegments_Email_Content", "image_url", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @paragraph_1 = Lookup("PaidSegments_Email_Content", "paragraph_1", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @paragraph_2 = Lookup("PaidSegments_Email_Content", "paragraph_2", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @paragraph_3 = Lookup("PaidSegments_Email_Content", "paragraph_3", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @cta_text = Lookup("PaidSegments_Email_Content", "cta_text", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @cta_url = Lookup("PaidSegments_Email_Content", "cta_url", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @use_subject = Lookup("PaidSegments_Email_Content", "use_subject", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @image_alt = Lookup("PaidSegments_Email_Content", "image_alt", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+    set @subject = Lookup("PaidSegments_Email_Content", "subject", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name, "use_subject", @use_subject)
+    set @show_block = True
+  else
+    set @show_block = False
+  endif
+else
+  set @show_block = False
+endif
+
+
+
+
+
+/***********************/
+/* Unsub & Preferences */
+/***********************/
+
+/* Define unsubscribe list type */
+SET @unsubscribe_list = 'Marketing'
+
+/* Sets @preferences_url */
+%%=ContentBlockByID("207888")=%%
+
+/* Sets @unsubscribe_from_single_list_url */
+%%=ContentBlockByID("207887")=%%
+
+/* Show 'Manage Preferences' in footer, set to 1 to show */
+SET @show_pref = 1 
+/* Show 'Log in' link in header, set to 1 to show */
+SET @show_login = 1
+
+
+
+]%%
+
+
+
+<div style="display: none; font-size: 1px; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all; font-family: sans-serif;">
+  %%=v(@preheader)=%%
+</div>
+
+<div style="display: none; font-size: 1px; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all; font-family: sans-serif;">
+  &zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;
+</div>
+
