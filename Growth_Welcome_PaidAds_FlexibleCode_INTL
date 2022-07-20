@@ -64,15 +64,15 @@ if @index_of > 0 then
   set @bucket_name1 = Substring(@substring,1, Subtract(IndexOf(@substring,"&"),1))
 
 /* isolating the bucket_name parameter content when its in the middle of the url  */
-if IndexOf(@bucket_name1,'_ES') > 0 then
+if IndexOf(@bucket_name1,'_ES&') > 0 then
 set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_ES"),1))
-elseif IndexOf(@bucket_name1,'_PTBR') > 0 then
+elseif IndexOf(@bucket_name1,'_PTBR&') > 0 then
 set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_PTBR"),1))
-elseif IndexOf(@bucket_name1,'_FR') > 0 then
+elseif IndexOf(@bucket_name1,'_FR&') > 0 then
 set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_FR"),1))
 elseif IndexOf(@bucket_name1,'_DE&') > 0 then
 set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_DE"),1))
-elseif IndexOf(@bucket_name1,'_IT') > 0 then
+elseif IndexOf(@bucket_name1,'_IT&') > 0 then
 set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_IT"),1))
 else   
 set @bucket_name = Substring(@substring,1, Subtract(IndexOf(@substring,"&"),1))
