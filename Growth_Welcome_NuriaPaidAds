@@ -95,7 +95,7 @@ elseif IndexOf(@bucket_name1,'_PTBR') > 0 then
 set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_PTBR"),1))
 elseif IndexOf(@bucket_name1,'_FR') > 0 then
 set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_FR"),1))
-elseif IndexOf(@bucket_name1,'_DE') > 0 then
+elseif IndexOf(@bucket_name1,'_DE&') > 0 then
 set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_DE"),1))
 elseif IndexOf(@bucket_name1,'_IT') > 0 then
 set @bucket_name = Substring(@bucket_name1,1, Subtract(IndexOf(@bucket_name1,"_IT"),1))
