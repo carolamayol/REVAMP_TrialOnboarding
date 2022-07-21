@@ -1,0 +1,36 @@
+/****************************/
+/* Paid Ads Dynamic Content */
+/****************************/
+
+set @shop_conversion_raw_signup_page = [shop_conversion_raw_signup_page] 
+set @index_of = indexOf(@shop_conversion_raw_signup_page, "bucket=")
+
+if @index_of > 0 then
+  set @show_block = True
+
+  /* cleaning bucket_name */
+  set @substring = Substring(@shop_conversion_raw_signup_page, @index_of)
+  set @bucket_name = Substring(@substring,1, Subtract(IndexOf(@substring,"&"),1))
+  set @bucket_name_last_chars = Substring(@bucket_name, Subtract(Length(@bucket_name), 2), 3)
+
+  if @bucket_name_last_chars == "TBR" then
+    set @bucket_name = Substring(@bucket_name, 1, Subtract(Length(@bucket_name),5))
+  elseif @bucket_name_last_chars == "_DE" or @bucket_name_last_chars == "_ES"  or @bucket_name_last_chars == "_FR" or @bucket_name_last_chars == "_IT" then
+    set @bucket_name = Substring(@bucket_name, 1, Subtract(Length(@bucket_name),3))
+  endif
+
+  /* content lookup */
+  set @title = Lookup("Paid_Ads_Email_Content", "title", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @image = Lookup("Paid_Ads_Email_Content", "image", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @image_url = Lookup("Paid_Ads_Email_Content", "image_url", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @paragraph_1 = Lookup("Paid_Ads_Email_Content", "paragraph_1", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @paragraph_2 = Lookup("Paid_Ads_Email_Content", "paragraph_2", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @paragraph_3 = Lookup("Paid_Ads_Email_Content", "paragraph_3", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @cta_text = Lookup("Paid_Ads_Email_Content", "cta_text", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @cta_url = Lookup("Paid_Ads_Email_Content", "cta_url", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @use_subject = Lookup("Paid_Ads_Email_Content", "use_subject", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @image_alt = Lookup("Paid_Ads_Email_Content", "image_alt", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @subject = Lookup("Paid_Ads_Email_Content", "subject", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name, "use_subject", @use_subject)
+else
+  set @show_block = False
+endif
