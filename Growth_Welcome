@@ -42,7 +42,6 @@ ELSE
 ENDIF
 
 
-
 /* Replatformers */
 set @replatformers_lookup = Lookup("shop-onboarding-answers-production", "shop_onboarding_move_existing_store", "contact_key", @contact_key)
 if @replatformers_lookup == "Yes" then
@@ -50,6 +49,30 @@ set @replatformers = 1
 else
 set @replatformers = 0
 endif
+
+
+
+/********************/
+/* 14 days wording */
+/********************/
+
+set @string = [shop_conversion_raw_signup_page]
+
+if IndexOf(@String,'vendoo') > 0 OR IndexOf(@String,'googleisbw') > 0 OR IndexOf(@String,'building-shop-313') > 0 OR IndexOf(@String,'https://www.shopify.com/revolut') > 0 OR IndexOf(@String,'building-1mbb') > 0 OR IndexOf(@String,'commerce-builders') > 0 OR IndexOf(@String,'support-build') > 0 then 
+set @show14 = ""
+else 
+set @show14 = " in 14 days"
+endif
+
+
+
+/********************/
+/* SL and Preheader */
+/********************/
+
+SET @subject = "Welcome to Shopify! Let’s get started"
+
+SET @preheader = CONCAT("Go from signup to selling",@show14)
 
 
 
@@ -62,65 +85,38 @@ endif
 set @shop_conversion_raw_signup_page = [shop_conversion_raw_signup_page] 
 set @index_of = indexOf(@shop_conversion_raw_signup_page, "bucket=")
 
-if @index_of > 0 then 
+if @index_of > 0 then
+  set @show_block = True
+
+  /* cleaning bucket_name */
   set @substring = Substring(@shop_conversion_raw_signup_page, @index_of)
-  
-  /* isolating the bucket_name parameter content when its in the middle of the url  */
   set @bucket_name = Substring(@substring,1, Subtract(IndexOf(@substring,"&"),1))
-  
-  /* check if this utm needs specific content */
-  if Length(Lookup("PaidSegments_Email_Content", "shop_conversion_raw_signup_page", "shop_conversion_raw_signup_page", @bucket_name)) > 0 then
-    set @title = Lookup("PaidSegments_Email_Content", "title", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
-    set @image = Lookup("PaidSegments_Email_Content", "image", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
-    set @image_url = Lookup("PaidSegments_Email_Content", "image_url", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
-    set @paragraph_1 = Lookup("PaidSegments_Email_Content", "paragraph_1", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
-    set @paragraph_2 = Lookup("PaidSegments_Email_Content", "paragraph_2", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
-    set @paragraph_3 = Lookup("PaidSegments_Email_Content", "paragraph_3", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
-    set @cta_text = Lookup("PaidSegments_Email_Content", "cta_text", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
-    set @cta_url = Lookup("PaidSegments_Email_Content", "cta_url", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
-    set @use_subject = Lookup("PaidSegments_Email_Content", "use_subject", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
-    set @image_alt = Lookup("PaidSegments_Email_Content", "image_alt", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
-    
-    set @subject = Lookup("PaidSegments_Email_Content", "subject", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name, "use_subject", @use_subject)
-    set @show_block = True
-  else
-    set @show_block = False
+  set @bucket_name_last_chars = Substring(@bucket_name, Subtract(Length(@bucket_name), 2), 3)
+
+  if @bucket_name_last_chars == "TBR" then
+    set @bucket_name = Substring(@bucket_name, 1, Subtract(Length(@bucket_name),5))
+  elseif @bucket_name_last_chars == "_DE" or @bucket_name_last_chars == "_ES"  or @bucket_name_last_chars == "_FR" or @bucket_name_last_chars == "_IT" then
+    set @bucket_name = Substring(@bucket_name, 1, Subtract(Length(@bucket_name),3))
   endif
+
+  /* content lookup */
+  set @title = Lookup("Paid_Ads_Email_Content", "title", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @image = Lookup("Paid_Ads_Email_Content", "image", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @image_url = Lookup("Paid_Ads_Email_Content", "image_url", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @paragraph_1 = Lookup("Paid_Ads_Email_Content", "paragraph_1", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @paragraph_2 = Lookup("Paid_Ads_Email_Content", "paragraph_2", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @paragraph_3 = Lookup("Paid_Ads_Email_Content", "paragraph_3", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @cta_text = Lookup("Paid_Ads_Email_Content", "cta_text", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @cta_url = Lookup("Paid_Ads_Email_Content", "cta_url", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @use_subject = Lookup("Paid_Ads_Email_Content", "use_subject", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @image_alt = Lookup("Paid_Ads_Email_Content", "image_alt", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name)
+  set @subject = Lookup("Paid_Ads_Email_Content", "subject", "lang", @lang, "shop_conversion_raw_signup_page", @bucket_name, "use_subject", @use_subject)
 else
   set @show_block = False
 endif
 
 
 
-
-/********************/
-/* 14 days wording */
-/********************/
-set @vendoo = "vendoo"
-set @googleisbw = "googleisbw"
-set @buildingshop313 = "building-shop-313"
-set @revolut = "https://www.shopify.com/revolut"
-set @building1mbb = "building-1mbb"
-set @commercebuilders = "commerce-builders"
-set @supportbuild = "support-build"
-
-set @string = [shop_conversion_raw_signup_page]
-
-if IndexOf(@String,@vendoo) > 0 OR IndexOf(@String,@googleisbw) > 0 OR IndexOf(@String,@buildingshop313) > 0 OR IndexOf(@String,@revolut) > 0 OR IndexOf(@String,@building1mbb) > 0 OR IndexOf(@String,@commercebuilders) > 0 OR IndexOf(@String,@supportbuild) > 0 then 
-set @show14 = ""
-else 
-set @show14 = " in 14 days"
-endif
-
-
-
-
-/* Subject Line */
- SET @subject = "Welcome to Shopify! Let’s get started"
-
-
-/* Preheader */
-SET @preheader = CONCAT("Go from signup to selling",@show14)
 
 
 
@@ -145,6 +141,8 @@ SET @show_login = 1
 
 
 ]%%
+
+<!-- X-250ok-CID: 1.0_welcome_en_2022_pa_tshirts v.2 -->
 
 <!DOCTYPE html>
 <html lang="en" dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -903,6 +901,7 @@ revealed once Dark Mode is triggered -->
                                       <tr>
                                         <td class="body-text pb-0" style="padding:0px; color: #0A0B0D; font-family: 'ShopifySans', Arial, sans-serif; font-size:18px; line-height:24px; text-align: center;">
                                           <h1 style="font-size: 24px; line-height: 36px; color: #0A0B0D; font-family: ShopifySans, Helvetica, Arial, sans-serif; font-weight: 700; margin: 0px 0px 20px 0px;text-align: center">Welcome to Shopify</h1>
+                                          
                                           <p class="body-text-lg" style="margin:0;margin-bottom: 0px; font-family:'ShopifySans',sans-serif;font-size:16px;line-height:24px; font-weight:400; mso-height-rule:exactly; color:#0A0B0D; margin: 0px 0px 20px 0px;">
                                             You made the right decision—Shopify powers millions of businesses worldwide, and we’re excited to help you&nbsp;build&nbsp;yours.
                                           </p>
@@ -934,33 +933,35 @@ revealed once Dark Mode is triggered -->
                         </table>
 
                         <!-- END HC201 -->
-                        <!-- START SN802 -->
-                        <table align="left" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;" width="100%">
-                          <tr>
-                            <td align="center" class="content darkmode" style="padding:0px 20px; background-color:#ffffff;">
-                              <!--[if true]>
-                              <table width="480" align="center" cellpadding="0" cellspacing="0">
-                                <tr>
-                                  <td>
-                              <![endif]-->
+                          <!-- START SN802 -->
+                          <table align="center" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;" width="100%">
+                            <tr>
+                              <td style="background-color: #ffffff; padding: 0 20px;" class="darkmode">
+                                <!--[if true]>
+                                <table width="480" align="center" cellpadding="0" cellspacing="0">
+                                  <tr>
+                                    <td>
+                                <![endif]-->
 
-                                    <table align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;width:100%;max-width:480px;">
-                                      <tr>
-                                        <td width="40" height="40" style="font-size:1px; line-height:1px; mso-line-height-rule: exactly;">
-                                          <hr style="border-width: 0; background: #b7b7b7; color: #b7b7b7; height:1px">
-                                        </td>
-                                      </tr>
-                                    </table>
+                                      <table align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;width:100%;max-width:480px;">
+                                        <tr>
+                                          <td height="20" style="border-bottom: #b7b7b7 solid 1px;">&nbsp;
+                                          </td>
+                                        </tr>
+                                        <tr>
+                                          <td height="20">&nbsp;</td>
+                                        </tr>
+                                      </table>
 
-                              <!--[if true]>
-                                  </td>
-                                </tr>
-                              </table>
-                              <![endif]-->
-                            </td>
-                          </tr>
-                        </table>
-                        <!-- END SN802 -->
+                                <!--[if true]>
+                                    </td>
+                                  </tr>
+                                </table>
+                                <![endif]-->
+                              </td>
+                            </tr>
+                          </table>
+                          <!-- END SN802 -->
                         
                         %%[ if NOT EMPTY(@shop_contact_owner_email) then ]%%
                         
@@ -999,33 +1000,35 @@ revealed once Dark Mode is triggered -->
                           </tr>
                         </table>
                         <!-- END CC309 -->
-                        <!-- START SN802 -->
-                        <table align="left" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;" width="100%">
-                          <tr>
-                            <td align="center" class="content darkmode" style="padding:0px 20px; background-color:#ffffff;">
-                              <!--[if true]>
-                              <table width="480" align="center" cellpadding="0" cellspacing="0">
-                                <tr>
-                                  <td>
-                              <![endif]-->
+                          <!-- START SN802 -->
+                          <table align="center" border="0" cellpadding="0" cellspacing="0" class="darkmode" role="presentation" style="width:100%;" width="100%">
+                            <tr>
+                              <td style="background-color: #ffffff; padding: 0 20px;" class="darkmode">
+                                <!--[if true]>
+                                <table width="480" align="center" cellpadding="0" cellspacing="0">
+                                  <tr>
+                                    <td>
+                                <![endif]-->
 
-                                    <table align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;width:100%;max-width:480px;">
-                                      <tr>
-                                        <td width="40" height="40" style="font-size:1px; line-height:1px; mso-line-height-rule: exactly;">
-                                          <hr style="border-width: 0; background: #b7b7b7; color: #b7b7b7; height:1px">
-                                        </td>
-                                      </tr>
-                                    </table>
+                                      <table align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;width:100%;max-width:480px;">
+                                        <tr>
+                                          <td height="20" style="border-bottom: #b7b7b7 solid 1px;">&nbsp;
+                                          </td>
+                                        </tr>
+                                        <tr>
+                                          <td height="20">&nbsp;</td>
+                                        </tr>
+                                      </table>
 
-                              <!--[if true]>
-                                  </td>
-                                </tr>
-                              </table>
-                              <![endif]-->
-                            </td>
-                          </tr>
-                        </table>
-                        <!-- END SN802 -->
+                                <!--[if true]>
+                                    </td>
+                                  </tr>
+                                </table>
+                                <![endif]-->
+                              </td>
+                            </tr>
+                          </table>
+                          <!-- END SN802 -->
                          %%[ endif ]%%
                         
                         %%[IF @show_block == 0 THEN]%%
